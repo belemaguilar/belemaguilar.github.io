@@ -1,0 +1,541 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>ARIMA model - Aguilar Portfolio</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Header -->
+				<!-- Note: The "styleN" class below should match that of the banner element. -->
+					<header id="header" class="alt style2">
+						<a href="index.html" class="logo"><strong>Aguilar</strong> <span>Portfolio</span></a>
+						<nav>
+							<a href="#menu">Menu</a>
+						</nav>
+					</header>
+
+				<!-- Menu -->
+					<nav id="menu">
+						<ul class="links">
+							<li><a href="index.html">Home</a></li>
+							<li><a href="landing.html">Landing</a></li>
+							<li><a href="elements.html">Elements</a></li>
+							<li><a href="arima.html">ARIMA model</a></li>
+						</ul>
+					</nav>
+
+				<!-- Banner -->
+				<!-- Note: The "styleN" class below should match that of the header element. -->
+					<section id="banner" class="style2">
+						<div class="inner">
+							<span class="image">
+								<img src="images/pic01.jpg" alt="" />
+							</span>
+							<header class="major">
+								<h1>ARIMA model</h1>
+							</header>
+							<div class="content">
+								<p>Adjustment of an ARIMA model for avocado's export prices<br />
+										   using Rstudio.</p>
+							</div>
+						</div>
+					</section>
+
+				<!-- Main -->
+					<div id="main">
+
+						<!-- One: Motivations-->
+							<section id="one">
+								<div class="inner">
+									<header class="major">
+										<h2>Motivations</h2>
+									</header>
+									<p> The economy of the town I come from relies mostly on the avocado's commerce.
+									    Even though this had brought certain goods, the majority of the primary farmers are
+										in a disadvantage.
+										Since the purchase price of this asset is usually stochastic, makes it  difficult
+										to predict for the agriculturists if the next week the price will increase or not;
+										this takes them to sell their fruit at a lower price most of the time.</p>
+
+									<p> Because of this, I decided that my very first project would be an attempt to
+									    obtain reliable forecasts. In order to achieve this, I learned time series
+										theory and its basic models. In this section, I will expand all the analysis made with Rstudio of the
+										resulting model.</p>
+
+									<p> Libraries used in this R project: ggplot, ggplot2, ggfortify, TSA, astsa, forecast, TSstudio</p>
+								</div>
+							</section>
+
+						<!-- Two: Price series data-position="center center" <a href="arima.html" class="image">-->
+							<section id="two" class="spotlights">
+								<section>
+										<img src="images/arima/02 - data.png" alt="Price series chart" width="580" height="400" />
+									<div class="content">
+										<div class="inner">
+											<header class="major">
+												<h3>Price series</h3>
+											</header>
+											<p>The dataset for this work was obtain manually from the MODULA magazine
+												(Ref1 on the bottom of this page). Since the price is fixed weekly for
+												every caliber (range of avocado's weight), we selected caliber 60 and
+												the timelapse of one week as a variables for our time series. </p>
+
+											<p>	At the beginning, the data started in
+												January, 2014; but there were entirely months without data. So, it was
+												decided that would be taken the biggest interval without any significant
+												gaps, which results to be of three years: from January, 2019 to December, 2021.
+												This lead to a time series of 156 weekly prices.</p>
+
+											<pre><code># Preformatted Code
+
+# Reading and transformation
+    setwd("C:/Users/Path");
+    data <- read.csv("C:/Users/Path/data60.csv");
+    data$date <- as.Date(data$date)
+
+# Creation of price series (2019-2021)
+    data_ts <- ts(data$price, start = c(2019, 1),  end = c(2021,52) , frequency = 52)
+
+# Price series chart
+    autoplot(data_ts, main = "Serie de precios",xlab = "Tiempo (semanal)", ylab = "Precio (pesos mexicanos)") + theme(axis.text = element_text(size = 20)) + theme(axis.title = element_text(size = 20)) + theme(title = element_text(size=20)) + geom_point()
+
+											</code></pre>
+										</div>
+									</div>
+								</section>
+								<section>
+										<img src="images/arima/0000 - decom.png" alt=""  width="580" height="500"/>
+									<div class="content">
+										<div class="inner">
+											<header class="major">
+												<h3>Decomposing</h3>
+											</header>
+											<p>Before the idea of applying ARIMA theory, was the step of decomposing the
+											   series and analyse its components. First, a simple aggregated data was plotted,
+											   where it was discovered the tendency wasn't constant; then, a multiplicative
+											   model was required. Next, the series was decomposed -as shown in the fig-:
+												the trend and reminders suggested non-linear correlated models, and the
+												seasonal shows evidence of periodic patterns relevants for a seasonal
+												ARIMA model.
+											</p>
+
+											<pre><code># Preformatted Code
+plot(aggregate(data_ts), cex.axis = 2, cex.lab = 3, xlab = "Tiempo (años)", ylab = "Estadisticas resumidas")
+plot(decompose(data_ts, type = "mult"))
+											</code></pre>
+										</div>
+									</div>
+								</section>
+								<section>
+									 <div class="column">
+									<img src="images/arima/05 - acf data.png" alt=""  width="580" height="300" />
+									<img src="images/arima/051 - transformations plots.png" alt=""  width="580" height="400" />
+									 </div>
+										 <div class="content">
+										<div class="inner">
+											<header class="major">
+												<h3>Stationarity</h3>
+											</header>
+											<p>The methodology to follow was Box-Jenkins. So, as first step, we needed our
+											series to be stationary. Graphically, we can observe there is no constant mean
+											in the series plot (above); we confirm that the series is not stationary by its ACF
+											plot (left). Therefore, a transformation was required.</p>
+											<p>It was analyzed 4 different transformations: first and second differences,
+											log data and differentiated log data. As the figure shows, the first differences
+											and differentiated log data are the ones with closest stable mean and variance.
+											Both ACF transformation plots (shown in the next step) are cut off very quickly,
+											so both transformations will be selected and compared.</p>
+
+											<pre><code># Preformatted Code
+acf(data_ts, lag = 156, main = "ACF serie de precios")
+
+data.dif = diff(data_ts); data.dd = diff(data.dif)
+data.l = log(data_ts); data.dl = diff(data.l)
+
+plot.ts(cbind(data.dif, data.dd, data.l, data.dl), main="")
+par(mfrow=c(2,1))
+acf(data.dif, lag = 155)
+acf(data.dl, lag = 155)
+par(mfrow=c(1,1))
+											</code></pre>
+										</div>
+									</div>
+								</section>
+								<section>
+									 <div class="column">
+									<img src="images/arima/07 - acf data.dif.png" alt=""  width="580" height="350" />
+									<img src="images/arima/11 - pacf data.dif.png" alt=""  width="580" height="350" />
+									 </div>
+										 <div class="content">
+										<div class="inner">
+											<header class="major">
+												<h3>Identification: First differences</h3>
+											</header>
+											<p>Since the ACF of the differentiated series cuts rapidly, we can adjust an
+											ARMA model to it. Its ACF y PACF plots suggest an autorregresive model of order
+											4 or a moving averages model of order 4, or a combination of this orders in an
+											ARIMA(p,d,q) model.</p>
+											<p></p>
+
+											<pre><code># Preformatted Code
+acf(data.dif, lag.max = 155, main= "ACF serie diferenciada")
+pacf(data.dif, lag.max = 155, main = "")
+
+data.dif.ar <- Arima(data_ts, order = c(4,1,0), method = "ML")
+
+											</code></pre>
+										</div>
+									</div>
+								</section>
+								<section>
+									 <div class="column">
+									<img src="images/arima/09 - acf data.dl.png" alt=""  width="580" height="175" />
+									<img src="images/arima/15 - data.ddl.png" alt=""  width="580" height="175" />
+									<img src="images/arima/16 - acf y pacf data.ddl (2).png" alt=""  width="580" height="350" />
+									 </div>
+										 <div class="content">
+										<div class="inner">
+											<header class="major">
+												<h3>Identification: Log differences</h3>
+											</header>
+											<p>Fo the log differentiated series and its ACF plots, we still observe seasonal patterns
+											(and we verified this by assuming the series could be modeled as a
+												non-seasonal one, but there weren't statistical significant models for it).
+											So, was chosen for a seasonal behavior and applied seasonal differences of order
+											52; the left images show both seasonal differentiated series and its ACF/PACF plots;
+											these suggest one first model ARIMA(2,1,4)(1,1,0) in the season s=23 because of
+											the most significant lag s=23 at the PACF plot and the cuts at lags 4 and 2
+											in the ACF/PACF, respectively.</p>
+											<p></p>
+
+											<pre><code># Preformatted Code
+acf(data.dl, lag.max = 155, main = "ACF logaritmo diferenciado")
+
+data.ddl = diff(data.dl, 52)
+autoplot(data.ddl, xlab = "Tiempo (semanal)", ylab = "Serie estacional") + theme(axis.text = element_text(size = 20)) + theme(axis.title = element_text(size = 20)) + geom_point()
+
+acf2(data.ddl,100, main = "")
+											</code></pre>
+										</div>
+									</div>
+								</section>
+								<section>
+									<div class="column">
+													<div class="table-wrapper">
+														<table class="alt">
+															<thead>
+																<tr>
+																	<th>Model</th>
+																	<th>Estimation</th>
+																	<th>Standard error</th>
+																	<th>t value</th>
+																	<th>p value</th>
+																</tr>
+															</thead>
+															<tbody>
+																<tr>
+																	<td rowspan="4">ARIMA(4,1,0) </br> AIC = 1057.3 </br> RMSE = 7.0656</td>
+																	<td>&alpha;<sub>1</sub> = 0.2298</td>
+																	<td>0.0794</td>
+																	<td>2.8942</td>
+															        <td>0.0038</td>
+																</tr>
+															   <tr>
+																	<td>&alpha;<sub>2</sub> = -0.2385</td>
+																	<td>0.0811</td>
+																	<td>2.9408</td>
+															        <td>0.0032</td>
+																</tr>
+															<tr>
+																	<td>&alpha;<sub>3</sub> = -0.0219</td>
+																	<td>0.0820</td>
+																	<td>0.2670</td>
+															        <td>0.7892</td>
+																</tr>
+															<tr>
+																	<td>&alpha;<sub>4</sub> = 0.1630</td>
+																	<td>0.080</td>
+																	<td>2.0375</td>
+															        <td>0.0415</td>
+																</tr>
+															<tr>
+																	<td rowspan="4">ARIMA(0,1,4) </br> AIC = 1058.7 </br> RMSE = 7.0995</td>
+																	<td>&beta;<sub>1</sub> = 0.2294</td>
+																	<td>0.0807</td>
+																	<td>2.8426</td>
+															        <td>0.0044</td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>2</sub> = -0.1576</td>
+																	<td>0.0807</td>
+																	<td>0.1885</td>
+															        <td>0.0593</td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>3</sub> = -0.1535</td>
+																	<td>0.1001</td>
+																	<td>1.5334</td>
+															        <td>0.1250</td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>4</sub> = 0.1241</td>
+																	<td>0.0831</td>
+																	<td>1.4933</td>
+															        <td>0.1354</td>
+																</tr>
+															<tr>
+																	<td rowspan="4">ARIMA(2,1,2)</br> AIC = 1057 </br> RMSE = 7.0609</td>
+																	<td>&alpha;<sub>1</sub> = -0.1099</td>
+																	<td>0.2618</td>
+																	<td>0.4197</td>
+															        <td>0.6746</td>
+																</tr>
+															<tr>
+																	<td>&alpha;<sub>2</sub> = -0.6088</td>
+																	<td>0.1248</td>
+																	<td>5.5128</td>
+															        <td>0.0000</td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>1</sub> = -0.3592</td>
+																	<td>0.3026</td>
+																	<td>1.1870</td>
+															        <td>0.2351</td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>2</sub> = 0.4406</td>
+																	<td>0.1618</td>
+																	<td>2.7231</td>
+															        <td>0.0064</td>
+																</tr>
+															</tfoot>
+														</table>
+													</div>
+										           <div class="table-wrapper">
+														<table class="alt">
+															<thead>
+																<tr>
+																	<th>Model</th>
+																	<th>Estimation</th>
+																	<th>Standard error</th>
+																	<th>t value</th>
+																	<th>p value</th>
+																</tr>
+															</thead>
+															<tbody>
+																<tr>
+																	<td rowspan="3">ARIMA(2,1,0) </br> AIC = 1057.4 </br> RMSE = 7.1625</td>
+																	<td colspan="4"></td>
+																</tr>
+															   <tr>
+																	<td>&alpha;<sub>1</sub> = 0.2274</td>
+																	<td>0.0769</td>
+																	<td>2.9570</td>
+															        <td>0.0031</td>
+																</tr>
+															<tr>
+																	<td>&alpha;<sub>2</sub> = -0.2844</td>
+																	<td>0.0767</td>
+																	<td>3.7079</td>
+															        <td>0.0002</td>
+																</tr>
+															<tr>
+																	<td rowspan="3">ARIMA(0,1,1) </br> AIC = 1064.3 </br> RMSE = 7.3733</td>
+																    <td colspan="4"></td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>1</sub> = 0.2971</td>
+																	<td>0.0839</td>
+																	<td>3.5411</td>
+															        <td>0.0003</td>
+																</tr>
+															<tr>
+																	<td colspan="4"></td>
+																</tr>
+															</tfoot>
+														</table>
+													</div>
+									           </div>
+										 <div class="content">
+										<div class="inner">
+											<header class="major">
+												<h3>Estimation: first differences</h3>
+											</header>
+											<p>The chosen method for both transformations to estimate was the Maximum Likelihood, since there is relatively few data.
+											    For the differences one, the first adjustments made showed that many of the coefficients
+											    had to be discarded because of the non-significant t and p values. This led to consider lower grade models such that
+											    all their coefficients were significant. The chosen ones are the shown in the second table
+											    (the grade was verified with overfitting). And since the autorregresive had lower AIC, was the finale non-seasonal
+											    chosen model.</p>
+
+											<pre><code># Preformatted Code
+# This code was repited for every model, with its respective changes
+# until the t and p values were acceptable.
+data.dif.ar <- Arima(data_ts, order = c(4,1,0), method = "ML")
+data.dif.ar
+# p-values
+(1-pnorm(abs(data.dif.ar$coef)/sqrt(diag(data.dif.ar$var.coef))))*2
+
+											</code></pre>
+										</div>
+									</div>
+								</section>
+								<section>
+										<div class="column">
+													<div class="table-wrapper">
+														<table class="alt">
+															<thead>
+																<tr>
+																	<th>Model</th>
+																	<th>Estimation</th>
+																	<th>Standard error</th>
+																	<th>t value</th>
+																	<th>p value</th>
+																</tr>
+															</thead>
+															<tbody>
+																<tr>
+																	<td rowspan="8">ARIMA(2,1,4 )(1,1,0)[23]</br></br> AIC = -67.96 </br> RMSE = 0.1585</td>
+																	<td>&alpha;<sub>1</sub> = 0.4007</td>
+																	<td>0.3258</td>
+																	<td>1.2299</td>
+															        <td>0.2210</td>
+																</tr>
+															   <tr>
+																	<td>&alpha;<sub>2</sub> = 0.3239</td>
+																	<td>0.2863</td>
+																	<td>1.1316</td>
+															        <td>0.2600</td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>1</sub> = -0.4108</td>
+																	<td>0.3155</td>
+																	<td>-1.3022</td>
+															        <td>0.1952</td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>2</sub> = -0.4972</td>
+																	<td>0.2834</td>
+																	<td>-1.7547</td>
+															        <td>0.0818</td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>3</sub> = 0.0895</td>
+																	<td>0.1005</td>
+																	<td>0.8905</td>
+															        <td>0.3749</td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>4</sub> = 0.2781</td>
+																	<td>0.1023</td>
+																	<td>2.7174</td>
+															        <td>0.0075</td>
+																</tr>
+															<tr>
+																	<td>&beta;<sub>3</sub> = -0.1535</td>
+																	<td>0.1001</td>
+																	<td>1.5334</td>
+															        <td>0.1250</td>
+																</tr>
+															<tr>
+																	<td>&circ;&alpha;<sub>1</sub> = -0.4445</td>
+																	<td>0.0855</td>
+																	<td>-5.2014</td>
+															        <td>0.0000</td>
+															</tr>
+															</tfoot>
+														</table>
+													</div>
+										           <div class="table-wrapper">
+														<table class="alt">
+															<thead>
+																<tr>
+																	<th>Model</th>
+																	<th>Estimation</th>
+																	<th>Standard error</th>
+																	<th>t value</th>
+																	<th>p value</th>
+																</tr>
+															</thead>
+															<tbody>
+																<tr>
+																	<td rowspan="3">ARIMA(0,1,0)(1,1,0)[23] </br> AIC = -66.26 </br> RMSE = 0.1658</td>
+																	<td colspan="4"></td>
+																</tr>
+															   <tr>
+																	<td>&circ;&alpha;<sub>1</sub> = -0.5231</td>
+																	<td>0.0763</td>
+																	<td>6.8535</td>
+															        <td>0.0000</td>
+																</tr>
+															<tr>
+																	<td colspan="4"></td>
+																</tr>
+															</tfoot>
+														</table>
+													</div>
+									           </div>
+										 <div class="content">
+										<div class="inner">
+											<header class="major">
+												<h3>Estimation: Log differences</h3>
+											</header>
+											<p>Similarly, at the step of analyze the significance of the proposed model's coefficients,
+											   was realized theirs does not fulfill this requirement. So, again was necessary to chose
+											   a reduced model. The chosen was an fully stationary over the log differentiated data; which
+											   statistical values were important.</p>
+
+											<pre><code># Preformatted Code
+sarima(data.l, 2,1,4, 1,1,0,23)
+
+# Once the acceptable model was found
+best.dl <- Arima(data.l, order = c(0,1,0), seasonal= list(order=c(1,1,0), period=23),  method = "ML")
+best.dl
+
+											</code></pre>
+										</div>
+									</div>
+								</section>
+							</section>
+
+						<!-- Three -->
+							<section id="three">
+								<div class="inner">
+									<header class="major">
+										<h2>Conclusions</h2>
+									</header>
+									<p>...</p>
+								</div>
+							</section>
+					</div>
+
+
+				<!-- Footer -->
+					<footer id="footer">
+						<div class="inner">
+							<ul class="copyright">
+								<li> Ref 1: <a href="#">https://productoresdeaguacate.com/MODULArevista/modulos/web/www/precioseua.php</a> </li>
+							</ul>
+						</div>
+					</footer>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
